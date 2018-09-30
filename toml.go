@@ -28,6 +28,12 @@ func (r result) cmpToml(expected, test interface{}) result {
 	switch e := expected.(type) {
 	case map[string]interface{}:
 		return r.cmpTomlMaps(e, test)
+	case []map[string]interface{}:
+		te := make([]interface{}, len(e))
+		for i, v := range e {
+			te[i] = v
+		}
+		return r.cmpTomlArrays(te, test)
 	case []interface{}:
 		return r.cmpTomlArrays(e, test)
 	default:
@@ -71,8 +77,16 @@ func (r result) cmpTomlMaps(
 }
 
 func (r result) cmpTomlArrays(ea []interface{}, t interface{}) result {
-	ta, ok := t.([]interface{})
-	if !ok {
+	var ta []interface{}
+	switch tt := t.(type) {
+	case []map[string]interface{}:
+		ta = make([]interface{}, len(tt))
+		for i, v := range tt {
+			ta[i] = v
+		}
+	case []interface{}:
+		ta = tt
+	default:
 		return r.mismatch("array", t)
 	}
 	if len(ea) != len(ta) {
@@ -89,7 +103,7 @@ func (r result) cmpTomlArrays(ea []interface{}, t interface{}) result {
 
 func isTomlValue(v interface{}) bool {
 	switch v.(type) {
-	case map[string]interface{}, []interface{}:
+	case map[string]interface{}, []interface{}, []map[string]interface{}:
 		return false
 	}
 	return true
